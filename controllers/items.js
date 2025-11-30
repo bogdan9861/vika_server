@@ -100,34 +100,43 @@ const update = async (req, res) => {
       return res.status(400).json({ message: "ID field is required" });
     }
 
-    uploadFile(file.path, `avatar${Date.now()}`)
-      .then(async (path) => {
-        const item = await prisma.item.findFirst({
-          where: { id },
-        });
-
-        if (!item) {
-          return res.status(404).json({ message: "Item not found" });
-        }
-
-        const updatedItem = await prisma.item.update({
-          where: {
-            id,
-          },
-          data: {
-            name: name || item.name,
-            description: description || item.description,
-            photo_url: path || item.photo_url,
-          },
-        });
-
-        res.status(200).json({ data: updatedItem });
-      })
-      .catch((e) => {
-        console.log(e);
-
-        res.status(500).json({ message: "Cannot upload avatar" });
+    const editItem = async (path) => {
+      const item = await prisma.item.findFirst({
+        where: { id },
       });
+
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+
+      const updatedItem = await prisma.item.update({
+        where: {
+          id,
+        },
+        data: {
+          name: name || item.name,
+          description: description || item.description,
+          photo_url: path || item.photo_url,
+        },
+      });
+
+      res.status(200).json({ data: updatedItem });
+    };
+
+    if (file?.path) {
+      uploadFile(file?.path, `avatar${Date.now()}`)
+        .then(async (path) => {
+          editItem(path);
+        })
+        .catch((e) => {
+          console.log(e);
+
+          res.status(500).json({ message: "Cannot upload avatar" });
+        });
+    } else {
+      editItem();
+    }
+    
   } catch (error) {
     console.log(error);
 
